@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escape Game: O Laboratório do Conhecimento</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Poppins', sans-serif;
+            overflow-x: hidden;
+        }
+        
+        /* --- ESTILOS DO JOGO (OS MESMOS DE ANTES) --- */
+        .room-container {
+            background: #ffffff; color: #333; border: 2px solid #ddd;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); position: relative; overflow: hidden;
+        }
+        .interactive-item {
+            cursor: pointer; transition: all 0.3s ease; position: absolute; text-align: center;
+        }
+        .interactive-item:hover {
+            transform: scale(1.1); filter: drop-shadow(0 0 10px rgba(0,0,0,0.3));
+        }
+        .eerie-glow { animation: eerieGlow 2s ease-in-out infinite alternate; }
+        @keyframes eerieGlow {
+            from { filter: drop-shadow(0 0 10px rgba(255, 255, 0, 0.7)); }
+            to { filter: drop-shadow(0 0 20px rgba(255, 255, 0, 1)); }
+        }
+        .puzzle-modal { background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); }
+        .info-modal-content { background: white; color: #333; }
+        .accordion-button {
+            background: #f0f0f0; border: none; text-align: left;
+            width: 100%; padding: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s;
+        }
+        .accordion-button:hover { background: #e0e0e0; }
+        .accordion-content {
+            max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out;
+            border-bottom: 1px solid #ddd;
+        }
+        .option-btn {
+            background: linear-gradient(145deg, #f9f9f9, #e6e6e6);
+            border: 2px solid #ddd; transition: all 0.2s ease;
+        }
+        .option-btn:hover {
+            border-color: #667eea; transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        /* --- NOVO: Estilo do Botão Iniciar --- */
+        .start-button {
+            background: #ffffff;
+            color: #667eea;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: 1.25rem;
+            padding: 0.75rem 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        .start-button:hover {
+            transform: scale(1.05);
+            background: #f0f0f0;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-gray-800">
+
+    <div id="introScreen" class="fixed inset-0 z-50 flex flex-col items-center justify-center p-4"
+         style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        
+        <video id="introVideo" class="max-w-full max-h-[80%] rounded-lg shadow-2xl" autoplay muted playsinline>
+            <source src="intro_video.mp4" type="video/mp4">
+            O seu navegador não suporta o vídeo.
+        </video>
+        
+        <button id="startGameBtn" class="hidden mt-6 start-button">
+            INICIAR JOGO
+        </button>
+    </div>
+
+    <div id="mainGameContent" style="display: none;">
+
+        <header class="p-4 bg-white/80 backdrop-blur-sm shadow-md">
+            <div class="max-w-6xl mx-auto flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-purple-700">🔬 Laboratório do Conhecimento</h1>
+                    <p class="text-gray-600">Resolva os desafios para encontrar o código da saída!</p>
+                </div>
+                <div class="bg-blue-100 px-4 py-2 rounded-lg border border-blue-300">
+                    <div class="text-sm text-blue-800">Cadeados Abertos</div>
+                    <div class="text-xl font-bold text-blue-900" id="progressCounter">0 / 3</div>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-6xl mx-auto p-4 mt-6">
+            
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                
+                <div class="lg:col-span-3">
+                    <div class="room-container rounded-lg p-6 min-h-[500px]">
+                        <div id="roomStations">
+                            
+                            <div id="station1" class="interactive-item p-4 rounded-lg" style="left: 10%; top: 20%;" onclick="game.startPuzzle('puzzle1')">
+                                <div class="text-5xl">🧑‍💻</div>
+                                <div class="text-lg font-semibold mt-2">Estação Puberdade</div>
+                                <div id="lock1" class="text-4xl mt-1">🔒</div>
+                            </div>
+
+                            <div id="station2" class="interactive-item p-4 rounded-lg" style="left: 40%; top: 40%;" onclick="game.startPuzzle('puzzle2')">
+                                <div class="text-5xl">👩‍🔬</div>
+                                <div class="text-lg font-semibold mt-2">Estação Cenários</div>
+                                <div id="lock2" class="text-4xl mt-1">🔒</div>
+                            </div>
+
+                            <div id="station3" class="interactive-item p-4 rounded-lg" style="left: 70%; top: 20%;" onclick="game.startPuzzle('puzzle3')">
+                                <div class="text-5xl">⚠️</div>
+                                <div class="text-lg font-semibold mt-2">Estação de Risco</div>
+                                <div id="lock3" class="text-4xl mt-1">🔒</div>
+                            </div>
+
+                            <div id="stationFinal" class="interactive-item p-4 rounded-lg" style="left: 40%; top: 75%;" onclick="game.startPuzzle('finalDoor')">
+                                <div class="text-5xl">🚪</div>
+                                <div class="text-lg font-semibold mt-2">Porta de Saída</div>
+                                <div class="text-4xl mt-1">🔐</div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    
+                    <div class="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4">
+                        <h3 class="text-lg font-bold text-purple-700 mb-3">
+                            📋 Pistas do Código
+                        </h3>
+                        <div id="cluesLog" class="space-y-2 min-h-[100px]">
+                            <p class="text-gray-500 italic">Resolva os puzzles das estações para encontrar as pistas do código final...</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4 text-center">
+                        <h3 class="text-lg font-bold text-green-700 mb-3">
+                            📚 Tira-Dúvidas
+                        </h3>
+                        <div class="text-5xl cursor-pointer hover:scale-110 transition-transform" onclick="game.openInfoBank()">
+                            💻
+                        </div>
+                        <p class="text-gray-600 mt-2 text-sm">Clique no computador para consultar as informações sobre Saúde e Puberdade!</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <div id="puzzleModal" class="fixed inset-0 puzzle-modal hidden flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-lg p-6 max-w-lg w-full mx-4 shadow-2xl">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="puzzleTitle" class="text-2xl font-bold text-purple-700"></h3>
+                    <button id="closePuzzle" class="text-gray-500 hover:text-black text-3xl">&times;</button>
+                </div>
+                <div id="puzzleContent" class="text-gray-700">
+                    </div>
+            </div>
+        </div>
+
+        <div id="infoModal" class="fixed inset-0 puzzle-modal hidden flex items-center justify-center z-50 p-4">
+            <div class="info-modal-content rounded-lg p-6 max-w-2xl w-full mx-4 shadow-2xl">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-green-700">📚 Tira-Dúvidas</h3>
+                    <button id="closeInfo" class="text-gray-500 hover:text-black text-3xl">&times;</button>
+                </div>
+                <div id="infoContent" class="space-y-2 max-h-[70vh] overflow-y-auto pr-2">
+                    </div>
+            </div>
+        </div>
+
+        <div id="victoryModal" class="fixed inset-0 puzzle-modal hidden flex items-center justify-center z-50">
+            <div class="bg-green-600 border-4 border-white rounded-lg p-8 max-w-lg w-full mx-4 text-center shadow-2xl">
+                <div class="text-6xl mb-4">🎉</div>
+                <h2 class="text-3xl font-bold text-white mb-4">VOCÊ ESCAPOU!</h2>
+                <div id="victoryMessage" class="text-white text-lg mb-6">
+                    Parabéns! Você usou seu conhecimento para resolver todos os desafios e destrancar a porta do laboratório!
+                </div>
+                <button id="playAgain" class="bg-white hover:bg-gray-200 text-green-700 px-6 py-3 rounded-lg font-semibold text-lg">
+                    Jogar Novamente
+                </button>
+            </div>
+        </div>
+
+    </div> <script>
+        class EscapeLab {
+            constructor() {
+                this.gameActive = true;
+                this.clues = []; 
+                this.solvedPuzzles = []; 
+                this.codePieces = {}; 
+                
+                this.puzzles = {
+                    'puzzle1': {
+                        title: '🧑‍💻 Estação Puberdade',
+                        type: 'multiple', 
+                        question: 'Mudar de humor (chorar ou sentir raiva) "sem motivo" na puberdade é frescura?',
+                        options: ['Verdadeiro, é frescura.', 'Falso, são mudanças hormonais.'],
+                        answer: 1, 
+                        reward: 'PISTA 1: O primeiro dígito do código final é 7.',
+                        code: '7'
+                    },
+                    'puzzle2': {
+                        title: '👩‍🔬 Estação Cenários',
+                        type: 'multiple', 
+                        question: 'Cris acabou de usar o banheiro. Qual o sentido correto para se limpar e evitar infecções?',
+                        options: ['De trás para frente (do ânus para a vulva).', 'De frente para trás (da vulva para o ânus).'],
+                        answer: 1, 
+                        reward: 'PISTA 2: O segundo dígito do código final é 3.',
+                        code: '3'
+                    },
+                    'puzzle3': {
+                        title: '⚠️ Estação de Risco',
+                        type: 'multiple', 
+                        question: 'É seguro usar dois preservativos ao mesmo tempo para maior proteção?',
+                        options: ['Verdadeiro, proteção em dobro.', 'Falso, o atrito pode rasgar os dois.'],
+                        answer: 1, 
+                        reward: 'PISTA 3: O terceiro dígito do código final é 1.',
+                        code: '1'
+                    },
+                    'finalDoor': {
+                        title: '🚪 Porta de Saída',
+                        type: 'code',
+                        question: 'Digite o código de 3 dígitos que você coletou nas estações:',
+                        answer: '731' 
+                    }
+                };
+
+                this.infoBank = {
+                    "Saúde Sexual": [
+                        { q: "Qual o erro mais comum ao usar um preservativo masculino?", a: "O erro mais comum é não retirar o ar da ponta (reservatório). Isso cria uma bolha de ar que pode fazê-lo estourar. Basta apertar suavemente a ponta antes de o desenrolar." },
+                        { q: "Posso guardar um preservativo na carteira?", a: "Não deve! O calor e a fricção danificam o látex. Guarde-o num local fresco, seco e verifique sempre o prazo de validade." },
+                        { q: "Para que serve o anel externo do preservativo feminino?", a: "Serve para manter o preservativo no lugar fora da vagina (ou ânus), cobrindo a área externa." },
+                        { q: "Mito ou Verdade: O duche vaginal previne gravidez e IST.", a: "Mito. O duche pode na verdade empurrar bactérias para dentro do colo do útero e desequilibra a flora vaginal, aumentando o risco de infecções." },
+                        { q: "Qual é o único método que protege contra a maioria das IST?", a: "O preservativo (masculino ou feminino)." },
+                        { q: "O que significa 'Consentimento Contínuo'?", a: "Significa que o consentimento deve ser dado e confirmado em cada etapa da atividade sexual, podendo ser retirado a qualquer momento." },
+                    ],
+                    "Puberdade": [
+                        { q: "Meus pelos estão crescendo, é normal?", a: "Sim! O crescimento de pelos corporais (axilas, região púbica, etc.) é um sinal comum da puberdade." },
+                        { q: "A masturbação é uma prática normal na adolescência?", a: "Sim, é normal e saudável! É uma forma de autoconhecimento." },
+                        { q: "Minha voz está falhando, o que é isso?", a: "É normal! A laringe está crescendo. A voz “quebra” por um tempo, mas depois se estabiliza num tom mais grave." },
+                        { q: "Devo me comparar com meus amigos?", a: "Não! Cada pessoa tem seu próprio ritmo. A puberdade pode começar em idades diferentes e isso é normal." },
+                        { q: "É verdade que o cheiro de suor fica mais forte?", a: "Sim! As glândulas de suor ficam mais ativas. Desodorante e banho diário ajudam." },
+                        { q: "Ter “sonhos molhados” (poluções noturnas) é normal?", a: "Sim! É uma forma normal do corpo liberar o excesso de sêmen na puberdade durante o sono." },
+                    ]
+                };
+
+                // O 'init()' é chamado pelo 'constructor'
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.updateDisplay();
+            }
+
+            setupEventListeners() {
+                document.getElementById('closePuzzle').addEventListener('click', () => this.closePuzzle());
+                document.getElementById('closeInfo').addEventListener('click', () => this.closeInfo());
+                document.getElementById('playAgain').addEventListener('click', () => location.reload());
+            }
+
+            startPuzzle(puzzleId) {
+                if (this.solvedPuzzles.includes(puzzleId)) {
+                    this.showMessage('✅ Estação já resolvida!', 'success');
+                    return;
+                }
+                if (puzzleId === 'finalDoor' && this.solvedPuzzles.length < 3) {
+                    this.showMessage('🔐 A porta está trancada. Resolva os 3 desafios das estações primeiro!', 'error');
+                    return;
+                }
+
+                const puzzle = this.puzzles[puzzleId];
+                if (!puzzle) return;
+
+                document.getElementById('puzzleTitle').textContent = puzzle.title;
+                document.getElementById('puzzleContent').innerHTML = this.renderPuzzle(puzzle, puzzleId);
+                document.getElementById('puzzleModal').classList.remove('hidden');
+                document.getElementById('puzzleModal').classList.add('flex');
+            }
+
+            renderPuzzle(puzzle, puzzleId) {
+                switch (puzzle.type) {
+                    case 'multiple':
+                        return `
+                            <p class="mb-6 text-lg">${puzzle.question}</p>
+                            <div class="space-y-3">
+                                ${puzzle.options.map((option, index) => `
+                                    <button class="w-full p-4 rounded-lg option-btn text-left" onclick="game.solvePuzzle('${puzzleId}', ${index})">
+                                        ${option}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        `;
+                    case 'code':
+                        return `
+                            <p class="mb-4 text-lg">${puzzle.question}</p>
+                            <input type="text" id="puzzleInput" class="w-full p-3 bg-gray-100 border-2 border-gray-300 rounded text-black text-2xl text-center tracking-[1rem]" maxlength="3">
+                            <button onclick="game.solvePuzzle('${puzzleId}')" class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded text-lg font-semibold mt-4">
+                                Destrancar
+                            </button>
+                        `;
+                }
+            }
+
+            solvePuzzle(puzzleId, userAnswer = null) {
+                const puzzle = this.puzzles[puzzleId];
+                let correct = false;
+
+                if (puzzle.type === 'multiple') {
+                    correct = (userAnswer === puzzle.answer);
+                } else if (puzzle.type === 'code') {
+                    const input = document.getElementById('puzzleInput').value;
+                    correct = (input.trim() === puzzle.answer);
+                }
+
+                if (correct) {
+                    if (puzzleId === 'finalDoor') {
+                        this.winGame();
+                    } else {
+                        this.showMessage('🎉 Correto! Pista adicionada.', 'success');
+                        this.clues.push(puzzle.reward);
+                        this.codePieces[puzzleId] = puzzle.code;
+                        this.solvedPuzzles.push(puzzleId);
+                        this.closePuzzle();
+                        this.updateDisplay();
+                    }
+                } else {
+                    this.showMessage('❌ Resposta incorreta. Tente novamente!', 'error');
+                }
+            }
+
+            openInfoBank() {
+                const contentDiv = document.getElementById('infoContent');
+                contentDiv.innerHTML = ''; 
+
+                for (const category in this.infoBank) {
+                    const title = document.createElement('h3');
+                    title.className = 'text-xl font-bold text-purple-700 mb-2 mt-4';
+                    title.textContent = category;
+                    contentDiv.appendChild(title);
+                    
+                    const categoryData = this.infoBank[category];
+                    categoryData.forEach(item => {
+                        contentDiv.innerHTML += this.createInfoAccordion(item.q, item.a);
+                    });
+                }
+
+                document.getElementById('infoModal').classList.remove('hidden');
+                document.getElementById('infoModal').classList.add('flex');
+
+                document.querySelectorAll('.accordion-button').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const content = button.nextElementSibling;
+                        if (content.style.maxHeight) {
+                            content.style.maxHeight = null;
+                        } else {
+                            content.style.maxHeight = content.scrollHeight + "px";
+                        }
+                    });
+                });
+            }
+
+            createInfoAccordion(question, answer) {
+                return `
+                    <div class="border rounded-lg">
+                        <button class="accordion-button">
+                            <span>${question}</span>
+                        </button>
+                        <div class="accordion-content">
+                            <p class="p-4 pt-0 text-gray-700">${answer}</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            closePuzzle() {
+                document.getElementById('puzzleModal').classList.add('hidden');
+                document.getElementById('puzzleModal').classList.remove('flex');
+            }
+            closeInfo() {
+                document.getElementById('infoModal').classList.add('hidden');
+                document.getElementById('infoModal').classList.remove('flex');
+            }
+
+            updateDisplay() {
+                document.getElementById('progressCounter').textContent = `${this.solvedPuzzles.length} / 3`;
+
+                const cluesDiv = document.getElementById('cluesLog');
+                if (this.clues.length > 0) {
+                    cluesDiv.innerHTML = this.clues.map(clue => `
+                        <div class="text-sm bg-green-100 p-2 rounded border-l-4 border-green-500 text-green-800 font-semibold">
+                            ${clue}
+                        </div>
+                    `).join('');
+                }
+
+                this.solvedPuzzles.forEach((puzzleId, index) => {
+                    const lockElement = document.getElementById(`lock${index + 1}`);
+                    if (lockElement) {
+                        lockElement.textContent = '🔓';
+                        lockElement.parentElement.classList.add('eerie-glow'); 
+                    }
+                });
+            }
+
+            showMessage(message, type) {
+                const messageDiv = document.createElement('div');
+                let bgColor, borderColor;
+
+                if (type === 'success') {
+                    bgColor = 'bg-green-600'; borderColor = 'border-green-800';
+                } else if (type === 'error') {
+                    bgColor = 'bg-red-600'; borderColor = 'border-red-800';
+                } else {
+                    bgColor = 'bg-blue-600'; borderColor = 'border-blue-800';
+                }
+
+                messageDiv.className = `fixed top-20 right-4 z-50 p-4 rounded-lg border-2 text-white transition-all duration-500 transform translate-x-full ${bgColor} ${borderColor}`;
+                messageDiv.textContent = message;
+                
+                document.body.appendChild(messageDiv);
+                
+                setTimeout(() => { messageDiv.style.transform = 'translateX(0)'; }, 100);
+                setTimeout(() => {
+                    messageDiv.style.transform = 'translateX(100%)';
+                    setTimeout(() => messageDiv.remove(), 500);
+                }, 3000);
+            }
+
+            winGame() {
+                this.gameActive = false;
+                this.closePuzzle();
+                document.getElementById('victoryModal').classList.remove('hidden');
+                document.getElementById('victoryModal').classList.add('flex');
+            }
+        }
+
+        // --- NOVO: LÓGICA DE INICIALIZAÇÃO COM VÍDEO ---
+        
+        let game;
+
+        window.addEventListener('load', () => {
+            // Pegar os elementos do ecrã de introdução e do jogo
+            const introScreen = document.getElementById('introScreen');
+            const introVideo = document.getElementById('introVideo');
+            const startGameBtn = document.getElementById('startGameBtn');
+            const mainGameContent = document.getElementById('mainGameContent');
+
+            // Tenta dar play no vídeo (com 'muted' é mais provável que funcione)
+            introVideo.play().catch(error => {
+                // Se o autoplay falhar, mostra o botão para o utilizador começar
+                console.warn("Autoplay do vídeo falhou. Mostrando o botão.", error);
+                startGameBtn.classList.remove('hidden');
+            });
+
+            // Quando o vídeo terminar, mostra o botão "INICIAR JOGO"
+            introVideo.addEventListener('ended', () => {
+                startGameBtn.classList.remove('hidden');
+            });
+
+            // Quando o botão "INICIAR JOGO" for clicado
+            startGameBtn.addEventListener('click', () => {
+                // 1. Esconde o ecrã de introdução
+                introScreen.style.display = 'none';
+                
+                // 2. Mostra o conteúdo principal do jogo
+                mainGameContent.style.display = 'block';
+                
+                // 3. AGORA SIM, cria e inicia o jogo
+                game = new EscapeLab();
+                // (O 'init()' já é chamado dentro do 'constructor' da classe)
+            });
+        });
+    </script>
+</body>
+</html>
